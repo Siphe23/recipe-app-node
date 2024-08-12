@@ -171,7 +171,7 @@ h1 {
   margin-top: 20px;
 }
 
-/* Navbar */
+
 nav {
   background-color: #333;
   color: #fff;
@@ -198,7 +198,7 @@ nav a:hover {
   text-decoration: underline;
 }
 
-/* Home Page */
+
 .input-container {
   display: flex;
   justify-content: center;
@@ -270,4 +270,19 @@ button:hover {
 
 .recipe-card button:hover {
   background-color: #218838;
+}
+.App-logo {
+  height: 30vmin; 
+  pointer-events: none;
+  border-radius: 50%; 
+  animation: App-logo-spin infinite 20s linear; 
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }

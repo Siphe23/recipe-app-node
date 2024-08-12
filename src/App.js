@@ -12,13 +12,13 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Navbar /> {/* Add Navbar here if needed */}
+        <Navbar /> 
         <Routes>
           <Route path="/" element={<LoginRegister />} />
           <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
           <Route path="/add-recipe" element={<ProtectedRoute><AddRecipe /></ProtectedRoute>} />
           <Route path="/update-recipe/:id" element={<ProtectedRoute><UpdateRecipeForm /></ProtectedRoute>} />
-          {/* Add other routes as needed */}
+         
         </Routes>
       </BrowserRouter>
     </AuthProvider>
