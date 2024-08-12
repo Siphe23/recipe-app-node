@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import logo from '../imge/logo.png';
 import '../pages/Home.css';
+import RecipeCard from '../components/RecipeCard';
 
 const Home = () => {
   const [recipes, setRecipes] = useState([]);
@@ -21,7 +22,7 @@ const Home = () => {
       .then((response) => response.json())
       .then((data) => {
         setRecipes(data);
-        setFilteredRecipes(data); 
+        setFilteredRecipes(data);
       })
       .catch((error) => console.error('Error fetching recipes:', error));
   }, []);
@@ -50,14 +51,19 @@ const Home = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const updatedRecipe = {
+      ...formData,
+      ingredients: formData.ingredients.split(',').map(item => item.trim()), // Convert to array
+    };
+    
     const updatedRecipes = formData.editMode
       ? recipes.map((recipe, index) =>
-          index === formData.editIndex ? formData : recipe
+          index === formData.editIndex ? updatedRecipe : recipe
         )
-      : [...recipes, formData];
-      
+      : [...recipes, updatedRecipe];
+
     setRecipes(updatedRecipes);
-    setFilteredRecipes(updatedRecipes); 
+    setFilteredRecipes(updatedRecipes);
 
     setFormData({
       name: '',
@@ -72,7 +78,7 @@ const Home = () => {
   const deleteRecipe = (index) => {
     const updatedRecipes = recipes.filter((_, i) => i !== index);
     setRecipes(updatedRecipes);
-    setFilteredRecipes(updatedRecipes); 
+    setFilteredRecipes(updatedRecipes);
   };
 
   const editRecipe = (index) => {
@@ -81,6 +87,7 @@ const Home = () => {
       ...recipeToEdit,
       editMode: true,
       editIndex: index,
+      ingredients: recipeToEdit.ingredients.join(', '), // Convert array to string for the form
     });
   };
 
@@ -90,12 +97,12 @@ const Home = () => {
 
   const handleSearch = () => {
     if (searchTerm.trim() === '') {
-      setFilteredRecipes(recipes); 
+      setFilteredRecipes(recipes);
     } else {
       const filtered = recipes.filter(
         (recipe) =>
           recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          recipe.ingredients.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          recipe.ingredients.join(', ').toLowerCase().includes(searchTerm.toLowerCase()) ||
           recipe.instructions.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredRecipes(filtered);
@@ -104,7 +111,7 @@ const Home = () => {
 
   const resetSearch = () => {
     setSearchTerm('');
-    setFilteredRecipes(recipes); 
+    setFilteredRecipes(recipes);
   };
 
   return (
@@ -124,7 +131,7 @@ const Home = () => {
               required
             />
 
-            <label>Ingredients:</label>
+            <label>Ingredients (comma separated):</label>
             <input
               type="text"
               id="ingredients"
@@ -168,24 +175,15 @@ const Home = () => {
           />
           <button onClick={handleSearch}>Search</button>
           <button onClick={resetSearch}>Reset</button>
-          <ul>
+          <div className="recipe-grid">
             {filteredRecipes.length > 0 ? (
               filteredRecipes.map((recipe, index) => (
-                <li key={index}>
-                  <div>
-                    <label className="label">Name:</label> {recipe.name}<br />
-                    <label className="label">Ingredients:</label> {recipe.ingredients}<br />
-                    <label className="label">Instructions:</label> {recipe.instructions}<br />
-                    <img src={recipe.image} alt="Recipe" className="recipe-image" />
-                  </div>
-                  <button onClick={() => editRecipe(index)}>Edit</button>
-                  <button onClick={() => deleteRecipe(index)}>Delete</button>
-                </li>
+                <RecipeCard key={recipe.id} recipe={recipe} onDelete={() => deleteRecipe(index)} />
               ))
             ) : (
               <p>No recipes found.</p>
             )}
-          </ul>
+          </div>
         </div>
         <Link to="/add-recipe">
           <button className="add-recipe-button">Add Recipe</button>
@@ -196,5 +194,4 @@ const Home = () => {
 };
 
 export default Home;
-
 

@@ -53,6 +53,54 @@ button:hover {
 .recipe-card {
   margin: 10px;
 }
+.home-container {
+  padding: 20px;
+  background-color: #f3e5ab;
+  font-family: Arial, sans-serif;
+  color: #333;
+}
+
+.App-header {
+  text-align: center;
+}
+
+.recipe-form,
+.recipe-list {
+  margin: 20px auto;
+  max-width: 800px;
+}
+
+.recipe-card {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 10px;
+  margin: 10px;
+  text-align: left;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.recipe-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 5px;
+}
+
+.recipe-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.recipe-grid .recipe-card {
+  flex: 1 1 calc(33.333% - 20px); 
+  margin: 10px;
+}
+
+.add-recipe-button {
+  margin-top: 20px;
+}
+
 .App-logo {
   height: 30vmin; 
   pointer-events: none;

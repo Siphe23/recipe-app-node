@@ -21,13 +21,21 @@ const RecipeList = () => {
 
   return (
     <div className="recipe-list">
-      {recipes.map(recipe => (
-        <RecipeCard key={recipe.id} recipe={recipe} onDelete={handleDelete} />
-      ))}
+      {recipes.length > 0 ? (
+        <div className="recipe-grid">
+          {recipes.map(recipe => (
+            <RecipeCard key={recipe.id} recipe={recipe} onDelete={handleDelete} />
+          ))}
+        </div>
+      ) : (
+        <p>No recipes found.</p>
+      )}
     </div>
   );
 };
 
 export default RecipeList;
+
+
 
 
