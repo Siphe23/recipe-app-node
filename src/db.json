@@ -1,0 +1,19 @@
+{
+    "recipes": [
+      {
+        "id": 1,
+        "name": "Spaghetti Bolognese",
+        "ingredients": ["spaghetti", "tomato", "beef"],
+        "instructions": "Boil pasta, cook beef, mix with sauce.",
+        "image": "https://example.com/spaghetti.jpg"
+      },
+      {
+        "id": 2,
+        "name": "Chicken Curry",
+        "ingredients": ["chicken", "curry powder", "coconut milk"],
+        "instructions": "Cook chicken, add spices, stir in coconut milk.",
+        "image": "https://example.com/curry.jpg"
+      }
+    ]
+  }
+  

@@ -50,6 +50,8 @@ In this project, I enhanced my skills in:
 - Utilizing JSON Server to simulate a backend, allowing for easy data management and storage.
 - Structuring components effectively to maintain a clean and organized codebase.
 
+ ## Site
+ https://my-recipe-app-one.vercel.app/
 ## Getting Started
 
 To run this project locally, follow these steps:
