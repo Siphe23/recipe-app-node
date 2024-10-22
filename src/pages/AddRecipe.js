@@ -6,16 +6,17 @@ const RecipeForm = ({ onSubmit, initialData = {}, isEdit = false }) => {
     name: initialData.name || '',
     ingredients: initialData.ingredients ? initialData.ingredients.join(', ') : '',
     instructions: initialData.instructions || '',
-    picture: initialData.image || '', // Use image if you keep it as is
+    picture: initialData.image || '', // Keep using 'image' if the backend expects 'image'
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setFormData({
       name: initialData.name || '',
       ingredients: initialData.ingredients ? initialData.ingredients.join(', ') : '',
       instructions: initialData.instructions || '',
-      picture: initialData.image || '', // Use image if you keep it as is
+      picture: initialData.image || '',
     });
   }, [initialData]);
 
@@ -32,41 +33,43 @@ const RecipeForm = ({ onSubmit, initialData = {}, isEdit = false }) => {
     }
 
     setError('');
+    setLoading(true); // Set loading to true while submitting
 
     const ingredientsArray = formData.ingredients.split(',').map(ingredient => ingredient.trim());
 
     const dataToSubmit = {
       ...formData,
       ingredients: ingredientsArray,
-      image: formData.picture, // Use image if you keep it as is
+      image: formData.picture, // Keep using 'image' if that's how your backend expects the field
     };
 
-    if (isEdit) {
-      fetch(`http://localhost:3001/recipes/${initialData.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dataToSubmit),
-      })
-      .then(response => response.json())
-      .then(data => onSubmit(data))
-      .catch(error => console.error('Error updating recipe:', error));
-    } else {
-      fetch('http://localhost:3001/recipes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dataToSubmit),
-      })
-      .then(response => response.json())
-      .then(data => onSubmit(data))
-      .catch(error => console.error('Error adding recipe:', error));
-    }
+    const requestOptions = {
+      method: isEdit ? 'PATCH' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dataToSubmit),
+    };
 
-    setFormData({
-      name: '',
-      ingredients: '',
-      instructions: '',
-      picture: '',
-    });
+    const url = isEdit
+      ? `http://localhost:3001/recipes/${initialData.id}`
+      : 'http://localhost:3001/recipes';
+
+    fetch(url, requestOptions)
+      .then((response) => response.json())
+      .then((data) => {
+        onSubmit(data);
+        setFormData({
+          name: '',
+          ingredients: '',
+          instructions: '',
+          picture: '',
+        });
+      })
+      .catch((error) => {
+        console.error('Error submitting recipe:', error);
+      })
+      .finally(() => {
+        setLoading(false); // Stop loading after submission
+      });
   };
 
   return (
@@ -76,33 +79,57 @@ const RecipeForm = ({ onSubmit, initialData = {}, isEdit = false }) => {
         <div>
           <label>
             Recipe Name
-            <input name="name" value={formData.name} onChange={handleChange} placeholder="Recipe Name" />
+            <input
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="Recipe Name"
+              required
+            />
           </label>
         </div>
         <div>
           <label>
             Ingredients (comma-separated)
-            <textarea name="ingredients" value={formData.ingredients} onChange={handleChange} placeholder="Ingredients" />
+            <textarea
+              name="ingredients"
+              value={formData.ingredients}
+              onChange={handleChange}
+              placeholder="Ingredients"
+              required
+            />
           </label>
         </div>
         <div>
           <label>
             Instructions
-            <textarea name="instructions" value={formData.instructions} onChange={handleChange} placeholder="Instructions" />
+            <textarea
+              name="instructions"
+              value={formData.instructions}
+              onChange={handleChange}
+              placeholder="Instructions"
+              required
+            />
           </label>
         </div>
         <div>
           <label>
             Picture URL
-            <input name="picture" value={formData.picture} onChange={handleChange} placeholder="Picture URL" />
+            <input
+              name="picture"
+              value={formData.picture}
+              onChange={handleChange}
+              placeholder="Picture URL"
+            />
           </label>
         </div>
         {error && <p className="error">{error}</p>}
-        <button type="submit">{isEdit ? 'Update' : 'Save'}</button>
+        <button type="submit" disabled={loading}>
+          {loading ? 'Submitting...' : isEdit ? 'Update' : 'Save'}
+        </button>
       </form>
     </div>
   );
 };
 
 export default RecipeForm;
-   
