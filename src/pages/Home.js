@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import logo from '../imge/logo.png';
-import '../pages/Home.css';
+import '../styles/Home.css';
 import RecipeCard from '../components/RecipeCard';
 
 const Home = () => {
@@ -13,19 +13,21 @@ const Home = () => {
     instructions: '',
     image: '',
     editMode: false,
-    editIndex: -1,
+    editId: null,
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
+  // Fetch recipes from the server
   useEffect(() => {
     fetch('http://localhost:3001/recipes')
-      .then((response) => response.json())
-      .then((data) => {
-        setRecipes(data);
-        setFilteredRecipes(data);
-      })
-      .catch((error) => console.error('Error fetching recipes:', error));
-  }, []);
+        .then((response) => response.json())
+        .then((data) => setRecipes(data))
+        .catch((error) => console.log('Error:', error));
+}, []);
+
+    
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -51,43 +53,66 @@ const Home = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const updatedRecipe = {
+
+    const recipeData = {
       ...formData,
-      ingredients: formData.ingredients.split(',').map(item => item.trim()), // Convert to array
+      ingredients: formData.ingredients.split(',').map((item) => item.trim()), // Convert ingredients to an array
     };
-    
-    const updatedRecipes = formData.editMode
-      ? recipes.map((recipe, index) =>
-          index === formData.editIndex ? updatedRecipe : recipe
-        )
-      : [...recipes, updatedRecipe];
 
-    setRecipes(updatedRecipes);
-    setFilteredRecipes(updatedRecipes);
-
-    setFormData({
-      name: '',
-      ingredients: '',
-      instructions: '',
-      image: '',
-      editMode: false,
-      editIndex: -1,
-    });
+    if (formData.editMode) {
+      // Update existing recipe
+      fetch(`http://localhost:3001/recipes/${formData.editId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(recipeData),
+      })
+        .then(() => {
+          const updatedRecipes = recipes.map((recipe) =>
+            recipe.id === formData.editId ? recipeData : recipe
+          );
+          setRecipes(updatedRecipes);
+          setFilteredRecipes(updatedRecipes);
+          resetForm();
+        })
+        .catch((error) => console.error('Error updating recipe:', error));
+    } else {
+      // Add new recipe
+      fetch('http://localhost:3001/recipes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(recipeData),
+      })
+        .then((response) => response.json())
+        .then((newRecipe) => {
+          setRecipes([...recipes, newRecipe]);
+          setFilteredRecipes([...recipes, newRecipe]);
+          resetForm();
+        })
+        .catch((error) => console.error('Error adding recipe:', error));
+    }
   };
 
-  const deleteRecipe = (index) => {
-    const updatedRecipes = recipes.filter((_, i) => i !== index);
-    setRecipes(updatedRecipes);
-    setFilteredRecipes(updatedRecipes);
+  const deleteRecipe = (id) => {
+    fetch(`http://localhost:3001/recipes/${id}`, { method: 'DELETE' })
+      .then(() => {
+        const updatedRecipes = recipes.filter((recipe) => recipe.id !== id);
+        setRecipes(updatedRecipes);
+        setFilteredRecipes(updatedRecipes);
+      })
+      .catch((error) => console.error('Error deleting recipe:', error));
   };
 
-  const editRecipe = (index) => {
-    const recipeToEdit = recipes[index];
+  const editRecipe = (id) => {
+    const recipeToEdit = recipes.find((recipe) => recipe.id === id);
     setFormData({
       ...recipeToEdit,
+      ingredients: recipeToEdit.ingredients.join(', '), // Convert array to string for form
       editMode: true,
-      editIndex: index,
-      ingredients: recipeToEdit.ingredients.join(', '), // Convert array to string for the form
+      editId: id,
     });
   };
 
@@ -96,14 +121,13 @@ const Home = () => {
   };
 
   const handleSearch = () => {
-    if (searchTerm.trim() === '') {
+    if (!searchTerm.trim()) {
       setFilteredRecipes(recipes);
     } else {
       const filtered = recipes.filter(
         (recipe) =>
           recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          recipe.ingredients.join(', ').toLowerCase().includes(searchTerm.toLowerCase()) ||
-          recipe.instructions.toLowerCase().includes(searchTerm.toLowerCase())
+          recipe.ingredients.join(', ').toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredRecipes(filtered);
     }
@@ -113,6 +137,25 @@ const Home = () => {
     setSearchTerm('');
     setFilteredRecipes(recipes);
   };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      ingredients: '',
+      instructions: '',
+      image: '',
+      editMode: false,
+      editId: null,
+    });
+  };
+
+  if (loading) {
+    return <p>Loading...</p>;
+  }
+
+  if (error) {
+    return <p className="error">{error}</p>;
+  }
 
   return (
     <div className="home-container">
@@ -124,17 +167,15 @@ const Home = () => {
             <label>Name:</label>
             <input
               type="text"
-              id="name"
               name="name"
               value={formData.name}
               onChange={handleInputChange}
               required
             />
 
-            <label>Ingredients (comma separated):</label>
+            <label>Ingredients (comma-separated):</label>
             <input
               type="text"
-              id="ingredients"
               name="ingredients"
               value={formData.ingredients}
               onChange={handleInputChange}
@@ -144,7 +185,6 @@ const Home = () => {
             <label>Instructions:</label>
             <input
               type="text"
-              id="instructions"
               name="instructions"
               value={formData.instructions}
               onChange={handleInputChange}
@@ -152,14 +192,8 @@ const Home = () => {
             />
 
             <label>Image:</label>
-            <input
-              type="file"
-              id="image"
-              name="image"
-              accept="image/*"
-              onChange={handleImageChange}
-            />
-            {formData.image && <img src={formData.image} alt="Recipe" className="image-preview" />}
+            <input type="file" accept="image/*" onChange={handleImageChange} />
+            {formData.image && <img src={formData.image} alt="Preview" className="image-preview" />}
 
             <button type="submit">{formData.editMode ? 'Update Recipe' : 'Add Recipe'}</button>
           </form>
@@ -177,8 +211,13 @@ const Home = () => {
           <button onClick={resetSearch}>Reset</button>
           <div className="recipe-grid">
             {filteredRecipes.length > 0 ? (
-              filteredRecipes.map((recipe, index) => (
-                <RecipeCard key={recipe.id} recipe={recipe} onDelete={() => deleteRecipe(index)} />
+              filteredRecipes.map((recipe) => (
+                <RecipeCard
+                  key={recipe.id}
+                  recipe={recipe}
+                  onDelete={() => deleteRecipe(recipe.id)}
+                  onEdit={() => editRecipe(recipe.id)}
+                />
               ))
             ) : (
               <p>No recipes found.</p>
@@ -194,4 +233,3 @@ const Home = () => {
 };
 
 export default Home;
-

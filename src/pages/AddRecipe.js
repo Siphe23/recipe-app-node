@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './AddRecipe.css';
+import '../styles/AddRecipe.css';
 
 const RecipeForm = ({ onSubmit, initialData = {}, isEdit = false }) => {
   const [formData, setFormData] = useState({

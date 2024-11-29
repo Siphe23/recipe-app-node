@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import RecipeForm from './RecipeForm';
+import RecipeForm from '../components/RecipeForm';
 
 const ParentComponent = () => {
   const handleSubmit = useCallback((recipe) => {

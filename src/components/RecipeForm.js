@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import '../pages/AddRecipe.css'; // Make sure to update the path if needed
+import axios from 'axios'; // Import axios here
+import '../styles/AddRecipe.css';
 
 const RecipeForm = ({ onSubmit, initialData = {}, isEdit = false }) => {
   const [formData, setFormData] = useState({
     name: initialData.name || '',
     ingredients: initialData.ingredients ? initialData.ingredients.join(', ') : '',
     instructions: initialData.instructions || '',
-    picture: initialData.image || '', // Use 'image' if that’s how your backend expects it
+    picture: initialData.image || '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Set form data when initialData changes (for editing)
     setFormData({
       name: initialData.name || '',
       ingredients: initialData.ingredients ? initialData.ingredients.join(', ') : '',
@@ -25,55 +25,53 @@ const RecipeForm = ({ onSubmit, initialData = {}, isEdit = false }) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation
     if (!formData.name || !formData.ingredients || !formData.instructions) {
       setError('All fields are required.');
       return;
     }
 
-    setError(''); // Clear previous errors
-    setLoading(true); // Set loading to true while submitting
+    setError('');
+    setLoading(true);
 
-    const ingredientsArray = formData.ingredients.split(',').map(ingredient => ingredient.trim());
+    const ingredientsArray = formData.ingredients.split(',').map((ingredient) => ingredient.trim());
 
     const dataToSubmit = {
-      ...formData,
+      name: formData.name,
       ingredients: ingredientsArray,
-      image: formData.picture, // Use 'image' as needed
+      instructions: formData.instructions,
+      image: formData.picture,
     };
 
-    const requestOptions = {
-      method: isEdit ? 'PATCH' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(dataToSubmit),
-    };
+    try {
+      if (isEdit) {
+        // Update an existing recipe
+        const response = await axios.patch(
+          `http://localhost:3000/api/v1/recipes/${initialData.id}`, // Adjust URL if needed
+          dataToSubmit
+        );
+        onSubmit(response.data);
+      } else {
+        // Add a new recipe
+        const response = await axios.post('http://localhost:3000/api/v1/recipes', dataToSubmit);
+        onSubmit(response.data);
+      }
 
-    const url = isEdit
-      ? `http://localhost:3001/recipes/${initialData.id}`
-      : 'http://localhost:3001/recipes';
-
-    fetch(url, requestOptions)
-      .then((response) => response.json())
-      .then((data) => {
-        onSubmit(data); // Trigger the onSubmit prop to notify parent component
-        // Reset form fields after successful submission
-        setFormData({
-          name: '',
-          ingredients: '',
-          instructions: '',
-          picture: '',
-        });
-      })
-      .catch((error) => {
-        console.error('Error submitting recipe:', error);
-        setError('Error submitting the recipe. Please try again.'); // Display error message
-      })
-      .finally(() => {
-        setLoading(false); // Stop loading after submission
+      // Reset form fields
+      setFormData({
+        name: '',
+        ingredients: '',
+        instructions: '',
+        picture: '',
       });
+    } catch (err) {
+      console.error('Error submitting recipe:', err);
+      setError('Error submitting the recipe. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

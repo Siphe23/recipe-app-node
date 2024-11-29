@@ -1,29 +1,35 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
-import AddRecipe from './pages/AddRecipe';
-import UpdateRecipeForm from './pages/UpdateRecipeForm';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { AuthProvider } from './components/AuthProvider';
 import LoginRegister from './pages/LoginRegister';
-import { AuthProvider } from './pages/AuthProvider';
 import ProtectedRoute from './pages/ProtectedRoute';
-import Navbar from './components/Navbar';
+import RecipeForm from './components/RecipeForm'; // Import RecipeForm
+import HomePage from './pages/Home';
+import RecipeList from './components/RecipeList'; // Import RecipeList
 
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Navbar />
+      <Router>
         <Routes>
-          <Route path="/" element={<LoginRegister />} />
-          <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-          <Route path="/add-recipe" element={<ProtectedRoute><AddRecipe /></ProtectedRoute>} />
-          <Route path="/update-recipe/:id" element={<ProtectedRoute><UpdateRecipeForm /></ProtectedRoute>} />
+          {/* Route for root path */}
+          <Route path="/home" element={<HomePage />} /> {/* You can change this to LoginRegister if needed */}
+
+          {/* Routes for login and register */}
+          <Route path="/login" element={<LoginRegister />} />
+          <Route path="/register" element={<LoginRegister />} />
+
+          {/* Protected Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/home" element={<HomePage />} />
+            <Route path="/recipes-form" element={<RecipeForm />} />
+            <Route path="/recipe-list" element={<RecipeList />} />
+        
+          </Route>
         </Routes>
-      </BrowserRouter>
+      </Router>
     </AuthProvider>
   );
 }
 
 export default App;
-
-
