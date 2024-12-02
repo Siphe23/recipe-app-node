@@ -1,52 +1,77 @@
-// LoginRegister.js
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../components/AuthProvider';
-import '../styles/LoginRegister.css';
 
 const LoginRegister = () => {
-    const [isRegistering, setIsRegistering] = useState(false);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const navigate = useNavigate();
-    const { login } = useAuth();
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const response = await fetch(
-            isRegistering ? 'http://localhost:3001/api/auth/register' : 'http://localhost:3001/api/auth/login',
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
-            }
-        );
-    
-        const data = await response.json();
-    
-        if (response.ok) {
-            login(data.token); 
-            navigate('/home'); 
-        } else {
-            alert(data.error);
-        }
-    };
-    
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [error, setError] = useState('');
 
-    return (
-        <div className="container">
-            <h1>{isRegistering ? 'Register' : 'Login'}</h1>
-            <form onSubmit={handleSubmit}>
-                <label>Email:</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                <label>Password:</label>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                <button type="submit">{isRegistering ? 'Register' : 'Login'}</button>
-            </form>
-            <button className="secondary" onClick={() => setIsRegistering(!isRegistering)}>
-                {isRegistering ? 'Go to Login' : 'Go to Register'}
-            </button>
-        </div>
-    );
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const url = isRegistering
+      ? 'http://localhost:5000/api/auth/register'  // Register route
+      : 'http://localhost:5000/api/auth/login';   // Login route
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        // Handle errors
+        setError(data.error || 'Something went wrong');
+        return;
+      }
+
+      // Handle successful response
+      if (isRegistering) {
+        alert('Registration successful!');
+      } else {
+        alert('Login successful!');
+        // Optionally store the token in localStorage or state
+        localStorage.setItem('token', data.token);
+      }
+    } catch (err) {
+      console.error('Error during fetch:', err);
+      setError('Network error, please try again later');
+    }
+  };
+
+  return (
+    <div>
+      <h2>{isRegistering ? 'Register' : 'Login'}</h2>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        <button type="submit">{isRegistering ? 'Register' : 'Login'}</button>
+      </form>
+      {error && <div style={{ color: 'red' }}>{error}</div>}
+      <button onClick={() => setIsRegistering(!isRegistering)}>
+        {isRegistering ? 'Already have an account? Login' : 'Don't have an account? Register'}
+      </button>
+    </div>
+  );
 };
 
 export default LoginRegister;

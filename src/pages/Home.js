@@ -19,15 +19,34 @@ const Home = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Fetch recipes from the server
+  // Fetch recipes from the MongoDB server
   useEffect(() => {
-    fetch('http://localhost:3001/recipes')
-        .then((response) => response.json())
-        .then((data) => setRecipes(data))
-        .catch((error) => console.log('Error:', error));
-}, []);
+    const fetchRecipes = async () => {
+      setLoading(true);
+      const token = localStorage.getItem('authToken'); // Assume the token is stored in localStorage
+      try {
+        const response = await fetch('http://localhost:5000/api/recipes', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
 
-    
+        if (response.status === 401) {
+          console.error('Unauthorized access. Please check your token.');
+        }
+
+        const data = await response.json();
+        setRecipes(data);
+        setFilteredRecipes(data); // Also set filteredRecipes
+      } catch (error) {
+        console.error('Error fetching recipes:', error);
+        setError('Failed to fetch recipes');
+      }
+      setLoading(false);
+    };
+
+    fetchRecipes();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -51,66 +70,69 @@ const Home = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const recipeData = {
-      ...formData,
-      ingredients: formData.ingredients.split(',').map((item) => item.trim()), // Convert ingredients to an array
+      name: formData.name,
+      ingredients: formData.ingredients.split(',').map((item) => item.trim()),
+      instructions: formData.instructions,
+      image: formData.image,
     };
 
-    if (formData.editMode) {
-      // Update existing recipe
-      fetch(`http://localhost:3001/recipes/${formData.editId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(recipeData),
-      })
-        .then(() => {
-          const updatedRecipes = recipes.map((recipe) =>
-            recipe.id === formData.editId ? recipeData : recipe
-          );
-          setRecipes(updatedRecipes);
-          setFilteredRecipes(updatedRecipes);
-          resetForm();
-        })
-        .catch((error) => console.error('Error updating recipe:', error));
-    } else {
-      // Add new recipe
-      fetch('http://localhost:3001/recipes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(recipeData),
-      })
-        .then((response) => response.json())
-        .then((newRecipe) => {
-          setRecipes([...recipes, newRecipe]);
-          setFilteredRecipes([...recipes, newRecipe]);
-          resetForm();
-        })
-        .catch((error) => console.error('Error adding recipe:', error));
+    try {
+      if (formData.editMode) {
+        // Update an existing recipe
+        const response = await fetch(`http://localhost:5000/api/recipes/${formData.editId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(recipeData),
+        });
+        const updatedRecipe = await response.json();
+        const updatedRecipes = recipes.map((recipe) =>
+          recipe._id === formData.editId ? updatedRecipe : recipe
+        );
+        setRecipes(updatedRecipes);
+        setFilteredRecipes(updatedRecipes);
+      } else {
+        // Add a new recipe
+        const response = await fetch('http://localhost:5000/api/recipes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(recipeData),
+        });
+        const newRecipe = await response.json();
+        setRecipes([...recipes, newRecipe]);
+        setFilteredRecipes([...recipes, newRecipe]);
+      }
+      resetForm();
+    } catch (error) {
+      console.error('Error saving recipe:', error);
     }
   };
 
-  const deleteRecipe = (id) => {
-    fetch(`http://localhost:3001/recipes/${id}`, { method: 'DELETE' })
-      .then(() => {
-        const updatedRecipes = recipes.filter((recipe) => recipe.id !== id);
-        setRecipes(updatedRecipes);
-        setFilteredRecipes(updatedRecipes);
-      })
-      .catch((error) => console.error('Error deleting recipe:', error));
+  const deleteRecipe = async (id) => {
+    try {
+      await fetch(`http://localhost:5000/api/recipes/${id}`, {
+        method: 'DELETE',
+      });
+      const updatedRecipes = recipes.filter((recipe) => recipe._id !== id);
+      setRecipes(updatedRecipes);
+      setFilteredRecipes(updatedRecipes);
+    } catch (error) {
+      console.error('Error deleting recipe:', error);
+    }
   };
 
   const editRecipe = (id) => {
-    const recipeToEdit = recipes.find((recipe) => recipe.id === id);
+    const recipeToEdit = recipes.find((recipe) => recipe._id === id);
     setFormData({
       ...recipeToEdit,
-      ingredients: recipeToEdit.ingredients.join(', '), // Convert array to string for form
+      ingredients: recipeToEdit.ingredients.join(', '),
       editMode: true,
       editId: id,
     });
@@ -149,13 +171,8 @@ const Home = () => {
     });
   };
 
-  if (loading) {
-    return <p>Loading...</p>;
-  }
-
-  if (error) {
-    return <p className="error">{error}</p>;
-  }
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p className="error">{error}</p>;
 
   return (
     <div className="home-container">
@@ -165,59 +182,27 @@ const Home = () => {
           <h2>{formData.editMode ? 'Edit Recipe' : 'Add Recipe'}</h2>
           <form onSubmit={handleSubmit}>
             <label>Name:</label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              required
-            />
-
+            <input type="text" name="name" value={formData.name} onChange={handleInputChange} required />
             <label>Ingredients (comma-separated):</label>
-            <input
-              type="text"
-              name="ingredients"
-              value={formData.ingredients}
-              onChange={handleInputChange}
-              required
-            />
-
+            <input type="text" name="ingredients" value={formData.ingredients} onChange={handleInputChange} required />
             <label>Instructions:</label>
-            <input
-              type="text"
-              name="instructions"
-              value={formData.instructions}
-              onChange={handleInputChange}
-              required
-            />
-
+            <input type="text" name="instructions" value={formData.instructions} onChange={handleInputChange} required />
             <label>Image:</label>
             <input type="file" accept="image/*" onChange={handleImageChange} />
             {formData.image && <img src={formData.image} alt="Preview" className="image-preview" />}
-
             <button type="submit">{formData.editMode ? 'Update Recipe' : 'Add Recipe'}</button>
           </form>
         </div>
 
         <div className="recipe-list">
           <h2>Recipe List</h2>
-          <input
-            type="text"
-            placeholder="Search..."
-            value={searchTerm}
-            onChange={handleSearchChange}
-          />
+          <input type="text" placeholder="Search..." value={searchTerm} onChange={handleSearchChange} />
           <button onClick={handleSearch}>Search</button>
           <button onClick={resetSearch}>Reset</button>
           <div className="recipe-grid">
             {filteredRecipes.length > 0 ? (
               filteredRecipes.map((recipe) => (
-                <RecipeCard
-                  key={recipe.id}
-                  recipe={recipe}
-                  onDelete={() => deleteRecipe(recipe.id)}
-                  onEdit={() => editRecipe(recipe.id)}
-                />
+                <RecipeCard key={recipe._id} recipe={recipe} onDelete={() => deleteRecipe(recipe._id)} onEdit={() => editRecipe(recipe._id)} />
               ))
             ) : (
               <p>No recipes found.</p>
@@ -225,7 +210,7 @@ const Home = () => {
           </div>
         </div>
         <Link to="/add-recipe">
-          <button className="add-recipe-button">Add Recipe</button>
+          <button className="add-recipe-button">Add New Recipe</button>
         </Link>
       </header>
     </div>
